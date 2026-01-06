@@ -35,7 +35,7 @@ class _SettingState extends State<Setting> {
               ? Color(0x33FFFFFF)
               : os_middle_grey,
           title: Text(
-            "使用校园 VPN 访问",
+            "使用校园代理访问",
             style: XSTextStyle(
               context: context,
               fontSize: 15,
@@ -54,29 +54,96 @@ class _SettingState extends State<Setting> {
           },
         ),
       ),
-      ...(useVpn ? [
-        Padding(padding: EdgeInsets.symmetric(horizontal: 15), child: Column(children: [
-          TextFormField(decoration: InputDecoration(labelText: 'VPN 登录学号'), initialValue: vpnUsername, onChanged: (String? value){
-            setStorage(key: 'uestc_webvpn_user', value: value ?? "");
-            setState(() {
-              vpnUsername = value ?? "";
-            });
-          }),
-          TextFormField(decoration: InputDecoration(labelText: 'VPN 登录密码', suffixIcon: IconButton(onPressed: () {
-            setState(() {
-              vpnPasswordObscured = !vpnPasswordObscured;
-            });
-          }, icon: Icon(vpnPasswordObscured ? Icons.visibility : Icons.visibility_off))),
-          initialValue: vpnPassword,
-          onChanged: (String? value){
-            setStorage(key: 'uestc_webvpn_pass', value: value ?? "");
-            setState(() {
-              vpnPassword = value ?? "";
-            });
-          },
-          obscureText: vpnPasswordObscured),
-        ]))
-      ] : []),
+      ...(useVpn
+          ? [
+              Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 15),
+                  child: Column(children: [
+                    TextFormField(
+                      decoration: InputDecoration(
+                        border: InputBorder.none,
+                        labelText: '登录学号',
+                        labelStyle: XSTextStyle(
+                          context: context,
+                          fontSize: 15,
+                          color: Provider.of<ColorProvider>(context).isDark
+                              ? os_dark_white
+                              : os_black,
+                        ),
+                      ),
+                      style: XSTextStyle(
+                        context: context,
+                        fontSize: 15,
+                        color: Provider.of<ColorProvider>(context).isDark
+                            ? os_dark_white
+                            : os_black,
+                      ),
+                      initialValue: vpnUsername,
+                      onChanged: (String? value) {
+                        setStorage(
+                            key: 'uestc_webvpn_user', value: value ?? "");
+                        setState(() {
+                          vpnUsername = value ?? "";
+                        });
+                      },
+                    ),
+                    TextFormField(
+                      decoration: InputDecoration(
+                        labelText: '登录密码',
+                        border: InputBorder.none,
+                        labelStyle: XSTextStyle(
+                          context: context,
+                          fontSize: 15,
+                          color: Provider.of<ColorProvider>(context).isDark
+                              ? os_dark_white
+                              : os_black,
+                        ),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() {
+                              vpnPasswordObscured = !vpnPasswordObscured;
+                            });
+                          },
+                          icon: Icon(
+                            vpnPasswordObscured
+                                ? Icons.visibility
+                                : Icons.visibility_off,
+                            color: Provider.of<ColorProvider>(context).isDark
+                                ? os_dark_white
+                                : os_dark_back,
+                          ),
+                        ),
+                      ),
+                      initialValue: vpnPassword,
+                      style: XSTextStyle(
+                        context: context,
+                        fontSize: 15,
+                        color: Provider.of<ColorProvider>(context).isDark
+                            ? os_dark_white
+                            : os_black,
+                      ),
+                      onChanged: (String? value) {
+                        setStorage(
+                            key: 'uestc_webvpn_pass', value: value ?? "");
+                        setState(() {
+                          vpnPassword = value ?? "";
+                        });
+                      },
+                      obscureText: vpnPasswordObscured,
+                    ),
+                  ]))
+            ]
+          : []),
+      Container(
+        width: MediaQuery.of(context).size.width,
+        margin: EdgeInsets.only(left: 15, right: 15, top: 20, bottom: 20),
+        height: 1,
+        decoration: BoxDecoration(
+          color: Provider.of<ColorProvider>(context).isDark
+              ? os_white_opa
+              : os_grey,
+        ),
+      ),
       ResponsiveWidget(
         child: ListTile(
           title: Text(

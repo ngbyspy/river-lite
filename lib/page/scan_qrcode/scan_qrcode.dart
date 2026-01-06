@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:offer_show/asset/color.dart';
 import 'package:offer_show/asset/vibrate.dart';
 import 'package:offer_show/asset/xs_textstyle.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+// import 'package:mobile_scanner/mobile_scanner.dart';
 
 class ScanQRCode extends StatefulWidget {
   ScanQRCode({Key? key}) : super(key: key);
@@ -46,15 +46,17 @@ class _ScanQRCodeState extends State<ScanQRCode> {
         ),
       ),
       backgroundColor: os_black,
-      body: Center(child: MobileScanner(onDetect: (result) {
-        XSVibrate().success();
-        final code = result.barcodes.first.rawValue;
-        if (code?.contains("https://bbs.uestc.edu.cn/forum.php?mod=viewthread&tid=") == true) {
-          final id = int.parse(code!.split(
-              "https://bbs.uestc.edu.cn/forum.php?mod=viewthread&tid=")[1]);
-          Navigator.pushNamed(context, '/topic_detail', arguments: id);
-          }
-      })),
+      // body: Center(child: MobileScanner(onDetect: (result) {
+      //   XSVibrate().success();
+      //   final code = result.barcodes.first.rawValue;
+      //   if (code?.contains(
+      //           "https://bbs.uestc.edu.cn/forum.php?mod=viewthread&tid=") ==
+      //       true) {
+      //     final id = int.parse(code!.split(
+      //         "https://bbs.uestc.edu.cn/forum.php?mod=viewthread&tid=")[1]);
+      //     Navigator.pushNamed(context, '/topic_detail', arguments: id);
+      //   }
+      // })),
     );
   }
 }

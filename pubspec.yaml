@@ -2,7 +2,7 @@ name: offer_show
 description: Project for hepan_lite
 
 publish_to: "none"
-version: 1.0.13+2
+version: 1.0.14+2
 
 environment:
   sdk: '>=3.0.0 <=3.22.0'
@@ -82,7 +82,7 @@ dependencies:
     git:
       url: git@github.com:fryette/webview_cookie_manager.git
       ref: 23d7475d9b9ac29f3cc92e91ac8a78ecb733a54d
-  mobile_scanner: ^7.0.1
+  # mobile_scanner: ^6.0.10
 dependency_overrides:
   photo_manager: ^3.7.1
 
