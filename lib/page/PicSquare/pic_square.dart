@@ -1516,9 +1516,9 @@ class DefineSwiperPhySics extends ScrollPhysics {
 
   @override
   SpringDescription get spring => const SpringDescription(
-        mass: 50, //质量
-        stiffness: 100, //硬度
-        damping: 0.8, //阻尼系数
+        mass: 1,
+        stiffness: 625000.19,
+        damping: 50000,
       );
 }
 

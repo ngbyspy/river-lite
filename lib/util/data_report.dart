@@ -4,6 +4,48 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:offer_show/util/storage.dart';
 
+class RequestFeed {
+  static report({
+    required String behaviorType,
+    String? source,
+    String? searchQuery,
+  }) async {
+    // 获取当前用户ID
+    String infoTxt = await getStorage(key: "myinfo", initData: "");
+    String userId = "0";
+    if (infoTxt != "") {
+      try {
+        userId = jsonDecode(infoTxt)["uid"].toString();
+      } catch (e) {
+        userId = "0";
+      }
+    }
+
+    // 构造请求数据
+    Map<String, dynamic> requestData = {
+      "user_id": userId,
+      "behavior_type": behaviorType,
+      "source": source ?? "feed",
+      "search_query": searchQuery ?? "",
+      "timestamp": DateTime.now().millisecondsSinceEpoch,
+    };
+
+    try {
+      Response response = await Dio().post(
+        "http://xusun000.top/api/upload_data",
+        data: requestData,
+        options: Options(contentType: Headers.jsonContentType),
+      );
+    } catch (e) {
+      if (e is DioException) {
+        print("DEBUG_LOG: 埋点上报失败，状态码: ${e.response?.statusCode}");
+      } else {
+        print("DEBUG_LOG: 埋点上报发生未知错误: $e");
+      }
+    }
+  }
+}
+
 class DataReport {
   static report({
     required String itemId,
@@ -38,44 +80,44 @@ class DataReport {
 
     try {
       Response response = await Dio().post(
-        "http://120.26.143.107:8080/upload_data",
+        "http://xusun000.top/api/upload_data",
         data: reportData,
         options: Options(contentType: Headers.jsonContentType),
       );
-      print("DEBUG_LOG: 埋点上报成功！类型: $behaviorType 服务器返回: ${response.data}"); 
+      print("DEBUG_LOG: 埋点上报成功！类型: $behaviorType 服务器返回: ${response.data}");
     } catch (e) {
-      if (e is DioError) {
+      if (e is DioException) {
         print("DEBUG_LOG: 埋点上报失败，状态码: ${e.response?.statusCode}");
       } else {
         print("DEBUG_LOG: 埋点上报发生未知错误: $e");
       }
       // 将异常抛出，以便 Scheduler 捕获并重试
-      rethrow; 
+      rethrow;
     }
   }
 }
 
 class ReportTask {
   final String itemId;
-  int retryCount = 0; 
+  int retryCount = 0;
   ReportTask(this.itemId);
 }
 
 class DataReportScheduler {
-  static final List<ReportTask> _queue = []; 
+  static final List<ReportTask> _queue = [];
   static Timer? _timer;
-  
+
   // --- 新增：去重与缓存有效期逻辑 ---
   // 记录本会话已成功上报的ID
-  static final Set<String> _reportedIds = {}; 
+  static final Set<String> _reportedIds = {};
   // 定时清理缓存的计时器
-  static Timer? _historyCleanerTimer; 
-  
-  static const int MAX_QUEUE_SIZE = 50; 
-  static const int MAX_RETRIES = 3; 
-  static const Duration INTERVAL = Duration(milliseconds: 500); 
+  static Timer? _historyCleanerTimer;
+
+  static const int MAX_QUEUE_SIZE = 50;
+  static const int MAX_RETRIES = 3;
+  static const Duration INTERVAL = Duration(milliseconds: 500);
   // 曝光去重有效期：10分钟
-  static const Duration HISTORY_VALID_DURATION = Duration(minutes: 1); 
+  static const Duration HISTORY_VALID_DURATION = Duration(minutes: 1);
 
   /// 将任务加入队列
   static void addTask(String itemId) {
@@ -91,7 +133,7 @@ class DataReportScheduler {
     // 3. 队列容量保护
     if (_queue.length >= MAX_QUEUE_SIZE) {
       print("DEBUG_LOG: [调度器] 队列已满，舍弃任务: $itemId");
-      return; 
+      return;
     }
 
     _queue.add(ReportTask(itemId));
@@ -133,22 +175,22 @@ class DataReportScheduler {
       }
 
       ReportTask task = _queue.removeAt(0);
-      
+
       try {
         await DataReport.report(
           itemId: task.itemId,
           behaviorType: "exposure",
         );
-        
+
         // 上报成功后，加入去重集合
         _reportedIds.add(task.itemId);
-        
       } catch (e) {
         // 异常处理与重试机制
         if (task.retryCount < MAX_RETRIES) {
           task.retryCount++;
-          _queue.add(task); 
-          print("DEBUG_LOG: [调度器] 上报失败，准备第${task.retryCount}次重试: ${task.itemId}");
+          _queue.add(task);
+          print(
+              "DEBUG_LOG: [调度器] 上报失败，准备第${task.retryCount}次重试: ${task.itemId}");
         } else {
           print("DEBUG_LOG: [调度器] 达到最大重试次数，舍弃任务: ${task.itemId}");
         }
