@@ -44,6 +44,7 @@ import 'package:offer_show/page/topic/topic_vote.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/mid_request.dart';
 import 'package:offer_show/util/provider.dart';
+import 'package:offer_show/util/data_report.dart'; //【埋点】
 import 'package:provider/provider.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:offer_show/util/storage.dart';
@@ -494,10 +495,21 @@ class _TopicDetailState extends State<TopicDetail> {
   @override
   void dispose() {
     isDispose = true; //在 dispose 方法中调用 setState 会导致错误，因为在 dispose 方法中，State 对象已经被标记为不可用，不能再调用 setState。
+    if (_entryTime != null) {
+    int stayDuration = DateTime.now().difference(_entryTime!).inSeconds;
+    DataReport.report(
+      itemId: widget.topicID.toString(),
+      behaviorType: "click", // 使用此类型记录停留
+      stayDuration: stayDuration,
+      completionRate: 1.0,
+    );
+    print("DEBUG_LOG: 正在上报停留时长埋点");
+  }
     super.dispose();
   }
 
   bool vibrate = false;
+ DateTime? _entryTime;
 
   @override
   void initState() {
@@ -508,6 +520,7 @@ class _TopicDetailState extends State<TopicDetail> {
     });
     _getLikeCount();
     super.initState();
+    _entryTime = DateTime.now();
     getMyUID();
     _scrollController.addListener(() {
       if (_scrollController.position.pixels < -100) {
@@ -886,12 +899,20 @@ class _TopicDetailState extends State<TopicDetail> {
       type: XSToast.loading,
       txt: "请稍后…",
     );
-    await Api().forum_topicadmin(
+    var response = await Api().forum_topicadmin(
       {
         "act": "reply",
         "json": jsonEncode(json),
       },
     );
+    //【埋点】评论
+    if (response != null && response["rs"] != null && response["rs"] == 1) {
+    DataReport.report(
+      itemId: widget.topicID.toString(),
+      behaviorType: "comment", 
+    );
+    print("DEBUG_LOG: 正在上报回复评论埋点");
+  }
     await _getData();
     Navigator.pop(context);
     hideToast();
@@ -1361,12 +1382,19 @@ class _TopicDetailState extends State<TopicDetail> {
                                       setState(() {
                                         sending = true;
                                       });
-                                      await Api().forum_topicadmin(
+                                      var response = await Api().forum_topicadmin(
                                         {
                                           "act": "reply",
                                           "json": jsonEncode(json),
                                         },
                                       );
+                                      if (response != null && response["rs"] != null &&response["rs"] == 1) {
+                                        DataReport.report(
+                                          itemId: widget.topicID.toString(),
+                                          behaviorType: "comment",
+                                        );
+                                        print("DEBUG_LOG: 正在上报回复帖子埋点");
+                                      }
                                       setState(() {
                                         sending = false;
                                       });

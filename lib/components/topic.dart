@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async'; //  引入异步库
 
 import 'package:offer_show/components/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,8 @@ import 'package:offer_show/util/provider.dart';
 import 'package:offer_show/util/storage.dart';
 import 'package:provider/provider.dart';
 import 'package:route_transitions/route_transitions.dart';
+import 'package:offer_show/util/data_report.dart'; // 【埋点】添加引用
+import 'package:visibility_detector/visibility_detector.dart'; // 可视化检测
 
 class Topic extends StatefulWidget {
   Map? data;
@@ -60,6 +63,9 @@ class _TopicState extends State<Topic> {
   bool isBlack = false;
   String? blackKeyWord = "";
 
+  bool _hasReportedExposure = false;//  新增一个标记，防止同一组件重复上报
+  Timer? _exposureTimer; //  定义计时器
+
   bool _isBlack() {
     bool flag = false;
     Provider.of<BlackProvider>(context, listen: false)
@@ -92,6 +98,12 @@ class _TopicState extends State<Topic> {
   void initState() {
     _getLikeStatus();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _exposureTimer?.cancel(); // 销毁卡片时，立即停止这个卡片的计时
+    super.dispose();
   }
 
   _feedbackSuccess() async {
@@ -274,7 +286,7 @@ class _TopicState extends State<Topic> {
             "id": widget.data!["topic_id"],
           });
           hideToast();
-          showToast(context: context, type: XSToast.success, txt: "收藏成功");
+          showToast(context: context, type: XSToast.success, txt: "收藏成功");  
         }
         if (res == "复制帖子链接") {
           Clipboard.setData(
@@ -788,6 +800,12 @@ class _TopicState extends State<Topic> {
     //       });
     //   return;
     // }
+    // 【采集】点击
+    DataReport.report(
+      itemId: tid.toString(),
+      behaviorType: "click",
+    );
+    print("DEBUG_LOG: 正在上报帖子click埋点 - ID: $tid");
     String info_txt = await getStorage(key: "myinfo", initData: "");
     if (info_txt == "") {
       Navigator.pushNamed(context, "/login", arguments: 0);
@@ -808,7 +826,7 @@ class _TopicState extends State<Topic> {
 
   @override
   Widget build(BuildContext context) {
-    return _isBlack() || isBlack
+    Widget content = _isBlack() || isBlack
         ? _blackCont()
         : Padding(
             padding: EdgeInsets.fromLTRB(
@@ -824,5 +842,35 @@ class _TopicState extends State<Topic> {
               radius: 15,
             ),
           );
+
+    //【埋点】曝光
+    // 优先使用 source_id，如果没有则使用 topic_id
+    var tid = widget.data!["source_id"] ?? widget.data!["topic_id"];
+    // 获取唯一的 Key，用于 VisibilityDetector
+    String uniqueKey = "topic_${tid}";
+    //  使用 VisibilityDetector 包裹返回的内容
+    return VisibilityDetector(
+      key: Key(uniqueKey),
+      onVisibilityChanged: (VisibilityInfo info) {
+        if (_hasReportedExposure) return;
+
+        if (info.visibleFraction > 0.5) {
+          // 只要用户停留在该卡片，且露出一半以上
+          _exposureTimer?.cancel(); // 清除之前的计时，重新开始
+          _exposureTimer = Timer(Duration(milliseconds: 1000), () {
+            if (mounted && !_hasReportedExposure) {
+              // 再次确认组件还在屏幕上且没报过
+              _hasReportedExposure = true;
+              DataReportScheduler.addTask(tid.toString());
+              print("DEBUG_LOG: 帖子卡片有效曝光 - ID: $tid");
+            }
+          });
+        } else {
+          // 用户滑走了，直接取消计时，不产生请求
+          _exposureTimer?.cancel();
+        }
+      },
+      child: content, 
+    );
   }
 }

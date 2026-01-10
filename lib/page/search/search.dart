@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async'; //  引入异步库
 
 import 'package:offer_show/components/cached_network_image.dart';
 import 'package:dismissible_page/dismissible_page.dart';
@@ -26,6 +27,8 @@ import 'package:offer_show/page/topic/topic_detail.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/provider.dart';
 import 'package:offer_show/util/storage.dart';
+import 'package:offer_show/util/data_report.dart'; //【埋点】添加引用
+import 'package:visibility_detector/visibility_detector.dart'; // 可视化检测
 import 'package:provider/provider.dart';
 
 class Search extends StatefulWidget {
@@ -145,6 +148,14 @@ class _SearchState extends State<Search> {
       _commentFocus.unfocus();
       setState(() {});
     }
+    //【埋点】搜索行为
+    DataReport.report(
+    itemId: "1", // 搜索行为无特定 itemId
+    behaviorType: "search", 
+    source: "search",
+    searchQuery: _controller.text,
+  );
+  print("DEBUG_LOG: 正在上报search埋点");
   }
 
   _getMore() async {
@@ -921,14 +932,27 @@ class SearchTopicCard extends StatefulWidget {
 }
 
 class _SearchTopicCardState extends State<SearchTopicCard> {
+  bool _hasReportedExposure = false;
+  Timer? _exposureTimer;
+
   @override
   void initState() {
     super.initState();
   }
 
   @override
+  void dispose() {
+    _exposureTimer?.cancel(); // 退出搜索页或清除搜索结果时，安全清理
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ResponsiveWidget(
+
+    var tid = widget.data!['tid'] ?? widget.data!['topic_id'] ?? widget.data!['id']; // 搜索结果中的帖子ID字段是 tid
+    String uniqueKey = "search_topic_${tid}";
+
+    Widget cardContent = ResponsiveWidget(
       child: Padding(
         padding: EdgeInsets.fromLTRB(15, 0, 15, 10),
         child: myInkWell(
@@ -938,6 +962,8 @@ class _SearchTopicCardState extends State<SearchTopicCard> {
               : os_white,
           tap: () {
             widget.tap();
+            //【埋点】搜索卡片点击
+            DataReport.report(itemId: tid.toString(), behaviorType: "click");
             Navigator.pushNamed(
               context,
               "/topic_detail",
@@ -1082,6 +1108,33 @@ class _SearchTopicCardState extends State<SearchTopicCard> {
           // height: height,
         ),
       ),
+    );
+    return VisibilityDetector(
+      key: Key(uniqueKey),
+      onVisibilityChanged: (VisibilityInfo info) {
+        // 如果已经报过了，直接无视
+        if (_hasReportedExposure) return;
+
+        // 判断可见面积是否超过 50%
+        if (info.visibleFraction > 0.5) {
+          // 开启防抖计时：只有停留在屏幕上超过 1000ms 才会触发
+          _exposureTimer?.cancel(); 
+          _exposureTimer = Timer(Duration(milliseconds: 1000), () {
+            if (mounted && !_hasReportedExposure) {
+              setState(() {
+                _hasReportedExposure = true;
+              });
+              // 发送埋点
+              DataReportScheduler.addTask(tid.toString());
+              print("DEBUG_LOG: 搜索结果有效曝光上报 - ID: $tid");
+            }
+          });
+        } else {
+          // 如果用户快速滑走（停留不足500ms），直接取消计时器
+          _exposureTimer?.cancel();
+        }
+      },
+      child: cardContent,
     );
   }
 }
