@@ -9,6 +9,7 @@ import 'package:offer_show/components/niw.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/provider.dart';
 import 'package:offer_show/util/storage.dart';
+import 'package:offer_show/util/data_report.dart'; //【埋点】
 import 'package:provider/provider.dart';
 
 class DetailFixBottom extends StatefulWidget {
@@ -73,6 +74,12 @@ class _DetailFixBottomState extends State<DetailFixBottom> {
     );
     tmp += ",${widget.topic_id}";
     setStorage(key: "topic_like", value: tmp);
+    //【埋点】 like
+    DataReport.report(
+    itemId: widget.topic_id.toString(),
+    behaviorType: "like",
+  );
+    print("DEBUG_LOG: 正在上报like埋点");
   }
 
   void _tapDisLike() async {
@@ -91,6 +98,12 @@ class _DetailFixBottomState extends State<DetailFixBottom> {
     String tmp = await getStorage(key: "topic_dis_like", initData: "");
     tmp += ",${widget.topic_id}";
     setStorage(key: "topic_dis_like", value: tmp);
+    //【埋点】 dislike
+    DataReport.report(
+    itemId: widget.topic_id.toString(),
+    behaviorType: "dislike",
+  );
+  print("DEBUG_LOG: 正在上报dislike埋点");
   }
 
   @override

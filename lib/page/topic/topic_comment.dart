@@ -25,6 +25,7 @@ import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/mid_request.dart';
 import 'package:offer_show/util/provider.dart';
 import 'package:offer_show/util/storage.dart';
+import 'package:offer_show/util/data_report.dart'; // 【埋点】添加引用
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
@@ -90,6 +91,14 @@ class _CommentState extends State<Comment> {
       "type": "post",
       "action": "support",
     });
+    //【埋点】点赞评论
+    if (ans != null && ans["rs"] != null && ans["rs"] == 1) {
+    DataReport.report(
+      itemId: widget.topic_id.toString(), // 强制归类为给帖子点赞
+      behaviorType: "like", // 行为归类为点赞
+    );
+    print("DEBUG_LOG: 已将评论点赞动作归类上报至帖子: ${widget.topic_id}");
+    }
     var ans_errcode = ans["errcode"]!;
     if (ans_errcode == "赞 +1") {
       showToast(

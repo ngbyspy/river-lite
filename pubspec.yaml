@@ -8,6 +8,7 @@ environment:
   sdk: '>=3.0.0 <=3.22.0'
 
 dependencies:
+  visibility_detector: ^0.4.0+2
   # webview_all: ^0.4.5
   wechat_camera_picker: ^4.3.1
   flutter_socks_proxy: ^0.0.2
@@ -72,16 +73,17 @@ dependencies:
   dismissible_page: ^1.0.2
   in_app_review: ^2.0.9
   # flutter_markdown: ^0.7.4+1 # 已引入源码
-  flutter_math_fork:
-    git:
-      url: git@github.com:dakshatsuraasa/flutter_math
-      ref: bd30a5faca93fe1279f1d39d347f9dbe8472877b
+  flutter_math_fork: ^0.7.4
+  # flutter_math_fork:
+  #   git:
+  #     url: https://github.com/dakshatsuraasa/flutter_math.git
+      # ref: bd30a5faca93fe1279f1d39d347f9dbe8472877b
   # flutter_markdown_latex : ^0.3.4 # 已引入源码
   # flutter_local_notifications: ^19.2.1
   webview_cookie_manager:
     git:
-      url: git@github.com:fryette/webview_cookie_manager.git
-      ref: 23d7475d9b9ac29f3cc92e91ac8a78ecb733a54d
+      url: https://github.com/fryette/webview_cookie_manager.git
+      # ref: 23d7475d9b9ac29f3cc92e91ac8a78ecb733a54d
   # mobile_scanner: ^6.0.10
 dependency_overrides:
   photo_manager: ^3.7.1

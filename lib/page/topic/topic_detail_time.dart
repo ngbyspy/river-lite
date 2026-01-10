@@ -13,6 +13,7 @@ import 'package:offer_show/components/niw.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/mid_request.dart';
 import 'package:offer_show/util/provider.dart';
+import 'package:offer_show/util/data_report.dart'; //【埋点】
 import 'package:provider/provider.dart';
 
 class TopicDetailTime extends StatefulWidget {
@@ -285,6 +286,12 @@ class _TopicDetailTimeState extends State<TopicDetailTime> {
                     ][widget.data["topic"]["is_favor"]],
                     "id": widget.data["topic"]["topic_id"],
                   });
+                  // 【埋点】收藏
+                  DataReport.report(
+                    itemId: widget.data["topic"]["topic_id"].toString(),
+                    behaviorType: "favorite",
+                  );
+                  print("DEBUG_LOG: 正在上报favorite埋点");
                   setState(() {
                     widget.data["topic"]["is_favor"] =
                         1 - widget.data["topic"]["is_favor"];

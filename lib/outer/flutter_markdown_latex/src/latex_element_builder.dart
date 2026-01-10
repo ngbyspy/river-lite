@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:offer_show/outer/flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_math_fork/ast.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:offer_show/outer/flutter_markdown/flutter_markdown.dart';
+// import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:offer_show/outer/markdown/markdown.dart' as md;
 
 class LatexElementBuilder extends MarkdownElementBuilder {
