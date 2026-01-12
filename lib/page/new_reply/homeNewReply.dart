@@ -16,6 +16,7 @@ import 'package:offer_show/components/topic.dart';
 import 'package:offer_show/components/totop.dart';
 import 'package:offer_show/page/home/homeNew.dart';
 import 'package:offer_show/page/topic/topic_detail.dart';
+import 'package:offer_show/util/data_report.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/provider.dart';
 import 'package:offer_show/util/storage.dart';
@@ -79,12 +80,29 @@ class _HomeNewReplyState extends State<HomeNewReply>
     speedUp(_scrollController);
   }
 
+  Future<List> fetchRecommendFeeds({bool initData = false}) async {
+    // 从服务器获取推荐的帖子Feed
+    var res = await RequestFeed().fetch(
+      behaviorType: initData ? "init_fetch" : "pull_fetch",
+      source: "new",
+      searchQuery: "",
+    );
+    print("homeeeee: ${res}, initData: $initData");
+    return res;
+  }
+
   _getInitData() async {
-    var tmp = await Api()
-        .forum_topiclist({"page": 1, "pageSize": pageSize, "sortby": "all"});
-    if (tmp != null && tmp["list"] != null && tmp["list"].length != 0) {
-      data = tmp["list"];
+    var recmd_list = await fetchRecommendFeeds(initData: true);
+    if (recmd_list.isNotEmpty) {
+      data = recmd_list;
+    } else {
+      var tmp = await Api()
+          .forum_topiclist({"page": 1, "pageSize": pageSize, "sortby": "all"});
+      if (tmp != null && tmp["list"] != null && tmp["list"].length != 0) {
+        data = tmp["list"];
+      }
     }
+
     if (data != null && data!.length != 0)
       setStorage(key: "home_new_reply", value: jsonEncode(data));
     load_done = false;
@@ -102,28 +120,33 @@ class _HomeNewReplyState extends State<HomeNewReply>
     if (loading || load_done) return;
     loading = true;
     setState(() {});
-    var tmp = await Api().forum_topiclist({
-      "page": (data!.length / pageSize + 1).toInt(),
-      "pageSize": pageSize,
-      "sortby": "all"
-    });
+    var recmd_list = await fetchRecommendFeeds(initData: false);
+    if (recmd_list.isNotEmpty) {
+      data!.addAll(recmd_list);
+      setStorage(key: "home_new_reply", value: jsonEncode(data));
+    } else {
+      var tmp = await Api().forum_topiclist({
+        "page": (data!.length / pageSize + 1).toInt(),
+        "pageSize": pageSize,
+        "sortby": "all"
+      });
+      Api().forum_topiclist({
+        "page": (data!.length / pageSize + 1).toInt() + 1,
+        "pageSize": pageSize,
+        "sortby": "all"
+      });
+      if (tmp != null &&
+          tmp["rs"] != 0 &&
+          tmp["list"] != null &&
+          tmp["list"].length != 0) {
+        data!.addAll(tmp["list"]);
+        setStorage(key: "home_new_reply", value: jsonEncode(data));
+      }
+      load_done = tmp == null || ((tmp["list"] ?? []).length < pageSize);
+    }
     setState(() {
       loading = false;
     });
-    Api().forum_topiclist({
-      "page": (data!.length / pageSize + 1).toInt() + 1,
-      "pageSize": pageSize,
-      "sortby": "all"
-    });
-    if (tmp != null &&
-        tmp["rs"] != 0 &&
-        tmp["list"] != null &&
-        tmp["list"].length != 0) {
-      data!.addAll(tmp["list"]);
-      setStorage(key: "home_new_reply", value: jsonEncode(data));
-    }
-    load_done = tmp == null || ((tmp["list"] ?? []).length < pageSize);
-    setState(() {});
   }
 
   Widget _buildComponents() {

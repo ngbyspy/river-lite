@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:offer_show/util/storage.dart';
 
 class RequestFeed {
-  static report({
+  Future<List<dynamic>> fetch({
     required String behaviorType,
     String? source,
     String? searchQuery,
@@ -32,16 +32,31 @@ class RequestFeed {
 
     try {
       Response response = await Dio().post(
-        "http://xusun000.top/api/upload_data",
+        "http://xusun000.top/api/fetch_data",
         data: requestData,
-        options: Options(contentType: Headers.jsonContentType),
+        options: Options(
+          contentType: Headers.jsonContentType,
+          sendTimeout: const Duration(seconds: 1),
+          receiveTimeout: const Duration(seconds: 1),
+        ),
       );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is List) {
+          return data;
+        }
+      } else {
+        print("DEBUG_LOG: 请求失败，状态码: ${response.statusCode}");
+      }
+      return [];
     } catch (e) {
       if (e is DioException) {
-        print("DEBUG_LOG: 埋点上报失败，状态码: ${e.response?.statusCode}");
+        print("DEBUG_LOG: 获取Feeds失败，错误类型: ${e.type}");
       } else {
-        print("DEBUG_LOG: 埋点上报发生未知错误: $e");
+        print("DEBUG_LOG: 获取Feeds发生未知错误: $e");
       }
+      return [];
     }
   }
 }
@@ -141,11 +156,11 @@ class DataReportScheduler {
     _startHistoryCleaner(); // 确保清理计时器启动
   }
 
-  /// 手动清空历史记录（建议在“下拉刷新”逻辑中调用）
-  //static void clearHistory() {
-  //  _reportedIds.clear();
-  //  print("DEBUG_LOG: [调度器] 已手动清空去重历史");
-  //}
+  /// 手动清空历史记录（建议在"下拉刷新"逻辑中调用）
+  // static void clearHistory() {
+  //   _reportedIds.clear();
+  //   print("DEBUG_LOG: [调度器] 已手动清空去重历史");
+  // }
 
   /// 清空队列并停止所有计时器（用于应用退出）
   static void dispose() {

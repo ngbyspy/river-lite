@@ -12,6 +12,7 @@ import 'package:offer_show/asset/vibrate.dart';
 import 'package:offer_show/components/occu_loading.dart';
 import 'package:offer_show/components/topic.dart';
 import 'package:offer_show/components/totop.dart';
+import 'package:offer_show/util/data_report.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/provider.dart';
 import 'package:offer_show/util/storage.dart';
@@ -61,14 +62,31 @@ class _HotNoScaffoldState extends State<HotNoScaffold>
     setState(() {});
   }
 
+  Future<List> fetchRecommendFeeds({bool initData = false}) async {
+    // 从服务器获取推荐的帖子Feed
+    var res = await RequestFeed().fetch(
+      behaviorType: initData ? "init_fetch" : "pull_fetch",
+      source: "hot",
+      searchQuery: "",
+    );
+    print("hotttttt: ${res}, initData: $initData");
+    return res;
+  }
+
   _getData() async {
-    var tmp = await Api().portal_newslist();
-    if (tmp != null &&
-        tmp["rs"] != 0 &&
-        tmp["list"] != null &&
-        tmp["list"].length != 0) {
-      await setStorage(key: "home_hot_lists", value: jsonEncode(tmp["list"]));
-      list = tmp["list"];
+    var recmd_list = await fetchRecommendFeeds(initData: true);
+    if (recmd_list.isNotEmpty) {
+      list = recmd_list;
+      await setStorage(key: "home_hot_lists", value: jsonEncode(list));
+    } else {
+      var tmp = await Api().portal_newslist();
+      if (tmp != null &&
+          tmp["rs"] != 0 &&
+          tmp["list"] != null &&
+          tmp["list"].length != 0) {
+        await setStorage(key: "home_hot_lists", value: jsonEncode(tmp["list"]));
+        list = tmp["list"];
+      }
     }
     setState(() {});
   }

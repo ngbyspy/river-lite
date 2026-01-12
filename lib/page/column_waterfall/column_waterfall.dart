@@ -19,6 +19,7 @@ import 'package:offer_show/components/totop.dart';
 import 'package:offer_show/page/column_waterfall/column_btn.dart';
 import 'package:offer_show/page/home/homeNew.dart';
 import 'package:offer_show/page/topic/topic_detail.dart';
+import 'package:offer_show/util/data_report.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/mid_request.dart';
 import 'package:offer_show/util/provider.dart';
@@ -42,7 +43,7 @@ class _ColumnWaterfallState extends State<ColumnWaterfall>
   var load_done = false;
   bool showBackToTop = false;
   bool vibrate = false;
-  int pageSize = 24;
+  int pageSize = 15;
   int? columnID = 61;
   String? columnName = "二手专区";
   int? subColumnID = -1;
@@ -221,34 +222,52 @@ class _ColumnWaterfallState extends State<ColumnWaterfall>
     });
   }
 
+  Future<List> fetchRecommendFeeds({bool initData = false}) async {
+    // 从服务器获取推荐的帖子Feed
+    var res = await RequestFeed().fetch(
+      behaviorType: initData ? "init_fetch" : "pull_fetch",
+      source: "column_waterfall",
+      searchQuery: "${columnID}_${subColumnID}",
+    );
+    print("waterfallllll: ${res}, initData: $initData");
+    return res;
+  }
+
   _getData() async {
     if (loading || load_done) return;
     loading = true;
     setState(() {
       // init_loading = true;
     });
-    var tmp = await Api().certain_forum_topiclist({
-      "page": data!.length / pageSize + 1,
-      "pageSize": pageSize,
-      "boardId": columnID, //columnID
-      "filterType": "typeid",
-      "filterId": subColumnID == -1 ? "" : subColumnID,
-      "sortby": "all",
-      "topOrder": 1,
-    });
+
+    var recmd_list = await fetchRecommendFeeds(initData: true);
+    if (recmd_list.isNotEmpty) {
+      data!.addAll(recmd_list);
+      await setStorage(key: "home_hot_lists", value: jsonEncode(data));
+      setStorage(key: "home_left_column", value: jsonEncode(data));
+    } else {
+      var tmp = await Api().certain_forum_topiclist({
+        "page": data!.length / pageSize + 1,
+        "pageSize": pageSize,
+        "boardId": columnID, //columnID
+        "filterType": "typeid",
+        "filterId": subColumnID == -1 ? "" : subColumnID,
+        "sortby": "all",
+        "topOrder": 1,
+      });
+      if (tmp != null &&
+          tmp["rs"] != 0 &&
+          tmp["list"] != null &&
+          tmp["list"].length != 0) {
+        data!.addAll(tmp["list"]);
+        setStorage(key: "home_left_column", value: jsonEncode(data));
+      }
+      load_done = tmp == null || ((tmp["list"] ?? []).length < pageSize);
+    }
     setState(() {
       loading = false;
       init_loading = false;
     });
-    if (tmp != null &&
-        tmp["rs"] != 0 &&
-        tmp["list"] != null &&
-        tmp["list"].length != 0) {
-      data!.addAll(tmp["list"]);
-      setStorage(key: "home_left_column", value: jsonEncode(data));
-    }
-    load_done = tmp == null || ((tmp["list"] ?? []).length < pageSize);
-    setState(() {});
   }
 
   late TabController _tabController;

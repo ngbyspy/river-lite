@@ -26,6 +26,7 @@ import 'package:offer_show/outer/showActionSheet/bottom_action_item.dart';
 import 'package:offer_show/outer/showActionSheet/bottom_action_sheet.dart';
 import 'package:offer_show/outer/showActionSheet/top_action_item.dart';
 import 'package:offer_show/page/topic/topic_detail.dart';
+import 'package:offer_show/util/data_report.dart';
 import 'package:offer_show/util/interface.dart';
 import 'package:offer_show/util/mid_request.dart';
 import 'package:offer_show/util/provider.dart';
@@ -58,35 +59,52 @@ class _TopicColumnState extends State<TopicColumn> {
   bool showTopTitle = false; //是否显示顶部标题
   bool need_50_water = false; //密语区需要支付50水滴才行
 
-  int pageSize = 25;
+  int pageSize = 10;
+
+  Future<List> fetchRecommendFeeds({bool initData = false}) async {
+    // 从服务器获取推荐的帖子Feed
+    var res = await RequestFeed().fetch(
+      behaviorType: initData ? "init_fetch" : "pull_fetch",
+      source: "column",
+      // 帖子专利ID
+      searchQuery: "${widget.columnID}",
+    );
+    print("columnnnnnn: ${res}, initData: $initData");
+    return res;
+  }
 
   _getMore() async {
     if (loading_more || load_done!) return;
     loading_more = true;
-    var tmp = await Api().certain_forum_topiclist({
-      "page": (data["list"].length / pageSize + 1).toInt(),
-      "pageSize": pageSize,
-      "boardId": widget.columnID,
-      "filterType": "typeid",
-      "filterId": data == null || select == 0
-          ? ""
-          : data["classificationType_list"][select - 1]
-              ["classificationType_id"],
-      "sortby": "all",
-    });
-    Api().certain_forum_topiclist({
-      "page": (data["list"].length / pageSize + 1).toInt() + 1,
-      "pageSize": pageSize,
-      "boardId": widget.columnID,
-      "filterType": "typeid",
-      "filterId": data == null || select == 0
-          ? ""
-          : data["classificationType_list"][select - 1]
-              ["classificationType_id"],
-      "sortby": "all",
-    });
-    if (tmp != null && tmp["list"] != null) data["list"].addAll(tmp["list"]);
-    load_done = data["list"].length < pageSize;
+    var recmd_list = await fetchRecommendFeeds(initData: true);
+    if (recmd_list.isNotEmpty) {
+      data["list"].addAll(recmd_list);
+    } else {
+      var tmp = await Api().certain_forum_topiclist({
+        "page": (data["list"].length / pageSize + 1).toInt(),
+        "pageSize": pageSize,
+        "boardId": widget.columnID,
+        "filterType": "typeid",
+        "filterId": data == null || select == 0
+            ? ""
+            : data["classificationType_list"][select - 1]
+                ["classificationType_id"],
+        "sortby": "all",
+      });
+      Api().certain_forum_topiclist({
+        "page": (data["list"].length / pageSize + 1).toInt() + 1,
+        "pageSize": pageSize,
+        "boardId": widget.columnID,
+        "filterType": "typeid",
+        "filterId": data == null || select == 0
+            ? ""
+            : data["classificationType_list"][select - 1]
+                ["classificationType_id"],
+        "sortby": "all",
+      });
+      if (tmp != null && tmp["list"] != null) data["list"].addAll(tmp["list"]);
+      load_done = data["list"].length < pageSize;
+    }
     loading_more = false;
     setState(() {});
   }
@@ -96,6 +114,7 @@ class _TopicColumnState extends State<TopicColumn> {
       if (!manualPull) loading = true;
       fold = true;
     });
+
     var tmp = await Api().certain_forum_topiclist({
       "page": 1,
       "pageSize": pageSize,
