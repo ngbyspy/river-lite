@@ -19,6 +19,8 @@ MacOS客户端：[点击前往跳转下载MacOS客户端](https://wwb.lanzouj.co
 本项目使用Google开源的跨端页面构建框架Flutter，使用Skia调用GPU直接渲染，渲染速度和表现力十分优秀，并可以移植到macOS、Windows、Linux、Android、IOS等诸多平台。现已在app Store上架Release版本「河畔Lite」，对应的安卓版本也在站内个人主页帖子发布，感兴趣的同学欢迎体验！！  
 
 ## 编译此项目
+构建需要 Flutter 3.38.0 或更新版本。iOS 构建需要 Xcode 26 或更新版本，以支持 iPadOS 26+ 的窗口控件布局。
+
 ```
 Windows环境
 1.首先你需要配置Flutter开发环境，可以参照如下链接

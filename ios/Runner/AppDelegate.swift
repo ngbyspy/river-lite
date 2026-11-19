@@ -2,7 +2,7 @@ import UIKit
 import Flutter
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -12,9 +12,13 @@ import Flutter
       displayLink.preferredFrameRateRange = CAFrameRateRange(minimum:120, maximum:120, preferred:120)
       displayLink.add(to: .current, forMode: .default)
     }
-    GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  }
+
   @objc func step(displaylink: CADisplayLink) {
       // Will be called once a frame has been built while matching desired frame rate
   }
